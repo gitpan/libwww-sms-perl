@@ -1,0 +1,163 @@
+<HTML>
+<HEAD>
+<TITLE>WWW::SMS - sends SMS using service provided by free websites</TITLE>
+<LINK REV="made" HREF="mailto:gp@familiehaase.de">
+</HEAD>
+
+<BODY>
+
+<A NAME="__index__"></A>
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#name">NAME</A></LI>
+	<LI><A HREF="#synopsis">SYNOPSIS</A></LI>
+	<LI><A HREF="#description">DESCRIPTION</A></LI>
+	<LI><A HREF="#methods">METHODS</A></LI>
+	<LI><A HREF="#submodule guidelines">SUBMODULE GUIDELINES</A></LI>
+	<LI><A HREF="#copyright">COPYRIGHT</A></LI>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="name">NAME</A></H1>
+<P>WWW::SMS - sends SMS using service provided by free websites</P>
+<P>
+<HR>
+<H1><A NAME="synopsis">SYNOPSIS</A></H1>
+<PRE>
+    use WWW::SMS;
+    my $sms = WWW::SMS-&gt;new(
+            '39',                #international prefix
+            '333',               #operator prefix
+            '1234567',           #phone number
+            'This is a test.',   #message text
+            username =&gt; 'abcde', #optional parameters
+            passwd =&gt; 'edcba'    #in hash fashion
+    );</PRE>
+<PRE>
+    #or now even just
+    my $sms = WWW::SMS-&gt;new($whole_number, $smstext);
+</PRE>
+<PRE>
+
+    for ( $sms-&gt;gateways() ) {     #for every compatible gateway
+        if ($sms-&gt;send( $_ ) {     #try to send sms
+            last;                  #until it succeds
+        } else {
+            print $WWW::SMS:Error; #here the error
+        }
+    }</PRE>
+<P>
+<HR>
+<H1><A NAME="description">DESCRIPTION</A></H1>
+<P><STRONG>WWW::SMS</STRONG> a Perl framework for sending free SMSs over the web.</P>
+<P>A new <STRONG>WWW::SMS</STRONG> object must be created with the <EM>new</EM> method.
+Once created you can send it through one of the available submodules.</P>
+<DL>
+<DT><STRONG><A NAME="item_new">WWW::SMS-&gt;new(INTPREFIX, OPPREFIX, PHONE_NUMBER, MESSAGETEXT [, OPTIONS]);</A></STRONG><BR>
+<DD>
+<DT><STRONG>WWW::SMS-&gt;new(WHOLE_NUMBER, MESSAGETEXT [, OPTIONS]);</STRONG><BR>
+<DD>
+This is the default SMS object constructor.
+<P><CODE>INTPREFIX</CODE> is the international prefix:
+some gateways just don't use the international prefix, 
+but put something in here anyway.</P>
+<P><CODE>OPPREFIX</CODE> is the operator prefix</P>
+<P><CODE>PHONE_NUMBER</CODE> not much to say</P>
+<P><CODE>WHOLE_NUMBER</CODE> the alternative constructor use the
+the whole number of your cellphone: it includes international prefix
+and operator prefix. It relies on the database in <EM>Telephone::Number</EM>
+to split your number in its 3 basic parts.
+So if unsure just use the ``three-part-phone-number'' constructor.</P>
+<P><CODE>MESSAGETEXT</CODE> even here not much to say. Submodules are going to cut
+the SMS to the maximum allowed length by the operator. You can check
+anyway the maximum length directly looking for the <EM>MAXLENGTH</EM> constant 
+in submodules.</P>
+<P><CODE>OPTIONS</CODE> are passed in a hash fashion. The useful ones to set include</P>
+<P><CODE>proxy</CODE> your HTTP proxy</P>
+<P><CODE>cookie_jar</CODE> The file where to store cookies. If not set, every cookie goes
+in the file ``lwpcookies.txt'' in your working directory.</P>
+<P><CODE>username</CODE> and <CODE>passwd</CODE> Used by registration based gateways</P>
+<P>Other parameters may be required by specific submodules.</P>
+</DL>
+<P>
+<HR>
+<H1><A NAME="methods">METHODS</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_send">$sms-&gt;send(<CODE>GATEWAY</CODE>)</A></STRONG><BR>
+<DD>
+Sends <CODE>$sms</CODE> using <CODE>GATEWAY</CODE>: returns <EM>1</EM> if succesfull, <EM>0</EM> if
+there are errors. The last error is in the <CODE>$WWW::SMS::Error</CODE> variable.
+<P><CODE>GATEWAY</CODE> the gateway you wish to use for sending the SMS: must be a scalar.</P>
+<P></P>
+<DT><STRONG><A NAME="item_gateways"><CODE>gateways([OPTIONS])</CODE></A></STRONG><BR>
+<DD>
+Scans @INC directories and returns an ARRAY containing the names
+of the available gateway submodules. If used upon a SMS object
+the submodules list returned is filtered by the PREFIX capability.
+Like this:
+<PRE>
+   WWW::SMS-&gt;gateways(); #returns every available gateway</PRE>
+<PRE>
+   $sms-&gt;gateways(); #returns just the gateways that can send $sms</PRE>
+<PRE>
+   #compatible gateways sorted by reliability
+   $sms-&gt;gateways(sorted =&gt; 'reliability');</PRE>
+<P></P></DL>
+<P>
+<HR>
+<H1><A NAME="submodule guidelines">SUBMODULE GUIDELINES</A></H1>
+<P>So, now you got WWW::SMS but what's next? Well, all that's cool about it
+resides in submodules. A submodule got to do the dirty work of GETting and
+POSTing webpages.
+How to write a submodule then?
+There a few points to observe:</P>
+<OL>
+<LI><STRONG><A NAME="item_Take_a_look_at_submodules_provided_as_example_firs">Take a look at submodules provided as example first!</A></STRONG><BR>
+
+Yes, copying and pasting a submodule structure is a good start point.
+<P></P>
+<LI><STRONG><A NAME="item_sub">sub MAXLENGTH</A></STRONG><BR>
+
+Please set the EXPORTable constant <CODE>MAXLENGTH</CODE> to what is the maximum length
+of SMS the gateway you are scripting for allow.
+<P></P>
+<LI><STRONG><A NAME="item_%40PREFIXES">@PREFIXES</A></STRONG><BR>
+
+<A HREF="#item_%40PREFIXES"><CODE>@PREFIXES</CODE></A> got to be an array of <CODE>Telephone::Number</CODE> objects.
+<CODE>Telephone::Number</CODE>-&gt;new takes 3 parameters: each one can be a scalar
+or an array reference.
+Each scalar or element of referenced arrays is a regular expression.
+Code will check for the phone number to match at least one of the regexp
+for each of intpref, prefix and phone_number. If you don't have regexp
+for one of these fields just give <EM>undef</EM> to <CODE>Telephone::Number</CODE>-&gt;new.
+Take a look at other submodules to better make up your mind.
+<P></P>
+<LI><STRONG><A NAME="item_Steps_and_%24WWW%3A%3ASMS%3A%3AError">Steps and $WWW::SMS::Error</A></STRONG><BR>
+
+Do GETs and POSTs as you want, using other submodules as you like.
+Just remember to mark each GET or POST with a increasing step number.
+And when you got an error please set the error variable <CODE>$WWW::SMS::Error</CODE>
+to something useful and include the step number in it, so debugging will
+be easier. Then <EM>return 0</EM>.
+If everything goes alright just <EM>return 1</EM>.
+<P></P>
+<LI><STRONG><A NAME="item_Post_your_module_back_to_the_community%21">Post your module back to the community!</A></STRONG><BR>
+
+That's important, cause having a high available number of working gateways
+is difficult (websites keep changing pretty fast) so everybody should
+share his/her new &amp; cool submodules implementation. Thank you.
+<P></P></OL>
+<P>
+<HR>
+<H1><A NAME="copyright">COPYRIGHT</A></H1>
+<P>Copyright 2001 Giulio Motta.</P>
+<P>This library is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.</P>
+
+</BODY>
+
+</HTML>
